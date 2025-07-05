@@ -1,0 +1,265 @@
+---
+title: "Getting Started"
+description: "Quick setup guide to get Zero Email Client running in minutes with installation and configuration."
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { CodeBlock } from 'fumadocs-ui/components/codeblock';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+
+This guide covers installation, basic configuration, and initial setup of the Zero email client.
+
+## Prerequisites
+
+<Callout type="info">
+Before you begin, ensure you have the following installed:
+</Callout>
+
+- **Node.js** (v18 or higher)
+- **pnpm** (v8 or higher)
+- **Git**
+
+## Installation
+
+<Steps>
+  <Step>Fork the Repository</Step>
+  <Step>Clone the Repository</Step>
+  <Step>Install Dependencies</Step>
+  <Step>Environment Setup</Step>
+  <Step>Database Setup</Step>
+  <Step>Start Development Server</Step>
+</Steps>
+
+### 1. Clone the Repository
+
+```bash title="Clone Repository"
+git clone https://github.com/your-username/zero.git
+cd zero
+```
+
+### 2. Install Dependencies
+
+```bash title="Install Dependencies"
+pnpm install
+```
+
+### 3. Environment Setup
+
+Copy the environment template and configure your settings:
+
+```bash title="Environment Setup"
+cp .env.example .env
+```
+
+Edit the `.env` file with your configuration:
+
+```bash title=".env Configuration"
+# Application URLs
+VITE_PUBLIC_APP_URL=http://localhost:3000
+VITE_PUBLIC_BACKEND_URL=http://localhost:8787
+
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/zerodotemail"
+
+# Authentication
+BETTER_AUTH_SECRET="your-super-secret-key-here"
+BETTER_AUTH_URL=http://localhost:3000
+COOKIE_DOMAIN="localhost"
+
+# OAuth Configuration
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Redis/Valkey (for local development with Docker)
+REDIS_URL="http://localhost:8079"
+REDIS_TOKEN="upstash-local-token"
+
+# Email Service (Optional)
+RESEND_API_KEY="your-resend-api-key"
+
+# AI Services (Optional)
+OPENAI_API_KEY="your-openai-api-key"
+PERPLEXITY_API_KEY="your-perplexity-api-key"
+AI_SYSTEM_PROMPT=""
+```
+
+### 4. Database Setup
+
+<Callout type="info">
+Zero uses Docker Compose for local development services (PostgreSQL, Redis/Valkey).
+</Callout>
+
+```bash title="Database Setup"
+# Start Docker services (PostgreSQL + Redis/Valkey)
+pnpm docker:db:up
+
+# Generate and run migrations
+pnpm db:generate
+pnpm db:migrate
+```
+
+### 5. Start Development Servers
+
+Zero runs two main services in development:
+
+```bash title="Start Development"
+# Quick start (starts database and all services)
+pnpm go
+
+# Or start services individually:
+# Start all development servers
+pnpm dev
+
+# Start database services first
+pnpm docker:db:up
+
+# Then start individual services from their directories:
+# cd apps/mail && pnpm dev     # Frontend (React Router + Vite)
+# cd apps/server && pnpm dev   # Backend (Cloudflare Workers)
+```
+
+<Callout type="info">
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8787`
+- **Database Studio**: `http://localhost:4983` (when running `pnpm db:studio`)
+</Callout>
+
+## First Time Setup
+
+<Steps>
+  <Step>Create Your Account</Step>
+  <Step>Connect Your Email</Step>
+  <Step>Customize Your Workspace</Step>
+</Steps>
+
+### 1. Create Your Account
+
+1. Navigate to `http://localhost:3000`
+2. Click "Sign Up" to create your account
+3. Verify your email address
+4. Complete the onboarding process
+
+### 2. Connect Your Email
+
+<Callout type="info">
+Zero uses OAuth to securely connect to your email providers.
+</Callout>
+
+1. Go to Settings > Connections
+2. Add your email provider (currently supports Gmail via OAuth)
+3. Authorize the connection through Google OAuth
+4. Your emails will be accessible through the MCP service
+
+### 3. Customize Your Workspace
+
+1. Set up your preferred labels and folders
+2. Configure notification settings
+3. Customize the interface theme
+4. Set up keyboard shortcuts
+
+## Development Commands
+
+<Tabs items={['Development', 'Build', 'Database']}>
+  <Tab value="Development">
+    ```bash title="Development Commands"
+# Start all development servers
+pnpm dev
+
+# Start individual services (from root)
+pnpm dev:docs    # Documentation
+# Or run individual services from their directories:
+# cd apps/mail && pnpm dev     # Frontend (React Router)
+# cd apps/server && pnpm dev   # Backend (Cloudflare Workers)
+
+# Alternatively, use the quick start command
+pnpm go  # Starts database and development servers
+
+# Lint code
+pnpm lint
+
+# Format code
+pnpm format
+
+# Check format
+pnpm check
+```
+  </Tab>
+  <Tab value="Build">
+    ```bash title="Build Commands"
+# Build all applications
+pnpm build
+
+# Build individual apps (from root)
+pnpm build:docs        # Build documentation
+pnpm build:frontend    # Build frontend (mail app)
+
+# Deploy individual apps (from root)
+pnpm deploy:frontend   # Deploy frontend
+pnpm deploy:backend    # Deploy backend
+
+# Start applications (from individual app directories)
+# cd apps/mail && pnpm start    # Start frontend
+# cd apps/server && pnpm start  # Start backend
+```
+  </Tab>
+  <Tab value="Database">
+    ```bash title="Database Commands"
+# Start database services
+pnpm docker:db:up
+# Alternative: docker compose -f docker-compose.db.yaml up -d
+
+# Stop database services
+pnpm docker:db:stop
+
+# Stop and remove database services
+pnpm docker:db:down
+
+# Clean database (remove volumes)
+pnpm docker:db:clean
+
+# Generate migrations
+pnpm db:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Push schema changes (development)
+pnpm db:push
+
+# Open database studio
+pnpm db:studio
+```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<Accordions type="single">
+  <Accordion title="Port already in use" value="port-issue">
+    ```bash title="Kill process on port 3000"
+lsof -ti:3000 | xargs kill -9
+```
+  </Accordion>
+  
+  <Accordion title="Database connection issues" value="db-issue">
+    <Callout type="warning">
+      Common solutions:
+    </Callout>
+    - Verify your `DATABASE_URL` in `.env`
+    - Ensure your database server is running
+    - Check network connectivity
+  </Accordion>
+  
+  <Accordion title="Email sync problems" value="email-issue">
+    <Callout type="info">
+      Check these settings:
+    </Callout>
+    - Verify Google OAuth credentials in `.env`
+    - Ensure proper OAuth scopes are configured
+    - Check that Gmail API is enabled in Google Cloud Console
+    - Review MCP service authentication
+  </Accordion>
+</Accordions>
+

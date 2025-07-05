@@ -1,0 +1,71 @@
+---
+title: "Zero: The Future of Email"
+description: "Zero is an open-source AI email solution that gives users the power to self-host their own email app while integrating external services like Gmail and other providers."
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { CodeBlock } from 'fumadocs-ui/components/codeblock';
+
+Zero transforms email management through artificial intelligence, self-hosting capabilities, and seamless integration with existing email providers.
+
+## Core Features
+
+<Cards>
+  <Card title="Privacy First" description="Your emails belong to you. No tracking, no data collection, complete privacy control." />
+  <Card title="AI-Powered Intelligence" description="Intelligent email categorization, smart responses, and automated organization." />
+  <Card title="Self-Hosting Control" description="Run your own email infrastructure with complete control and customization." />
+  <Card title="Unified Inbox" description="Connect multiple email providers in one seamless interface." />
+  <Card title="Fully Customizable" description="Tailor every aspect of your email experience to your needs." />
+  <Card title="Developer-Friendly" description="Built for extensibility with modern web technologies and APIs." />
+</Cards>
+
+## Getting Started
+
+Follow these steps to set up Zero locally:
+
+<Steps>
+  <Step>**Clone the Repository** - Get the latest version of Zero</Step>
+  <Step>**Install Dependencies** - Set up all required packages with pnpm</Step>
+  <Step>**Configure Environment** - Set up your database and email providers</Step>
+  <Step>**Start Development** - Launch the application and start using Zero</Step>
+</Steps>
+
+```bash title="Quick Setup Commands"
+# Clone the repository
+git clone https://github.com/Mail-0/Zero.git
+cd Zero
+
+# Install dependencies
+pnpm install
+
+# Set up database and start development
+pnpm go
+```
+
+The `pnpm go` command will automatically start the database and development servers for you.
+
+## Documentation Structure
+
+<Cards>
+  <Card href="./docs/getting-started/" title="Getting Started" description="Installation, setup, and basic configuration" />
+  <Card href="./docs/architecture/" title="Architecture" description="System design and technical overview" />
+  <Card href="./docs/MCP/" title="MCP Server" description="Model Context Protocol server setup and usage" />
+  <Card href="./docs/deployment/" title="Deployment" description="Production deployment guides" />
+  <Card href="./docs/contributing/" title="Contributing" description="Development workflow and contribution guidelines" />
+</Cards>
+
+## Technology Stack
+
+- **Frontend**: React 19, TypeScript, Tailwind CSS, React Router v7 with Vite
+- **Backend**: Node.js, Drizzle ORM, PostgreSQL (Docker), Cloudflare Workers
+- **Authentication**: Better Auth
+- **Email Processing**: Custom email parsing and rendering
+- **Deployment**: Cloudflare Workers, Docker
+
+## Community
+
+- **GitHub**: [Repository](https://github.com/Mail-0/Zero)
+- **Issues**: [Bug Reports & Feature Requests](https://github.com/Mail-0/Zero/issues)
+- **Discussions**: [Community Forum](https://github.com/Mail-0/Zero/discussions)
+

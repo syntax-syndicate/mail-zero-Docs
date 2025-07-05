@@ -1,0 +1,801 @@
+---
+title: "Deployment Guide"
+description: "Production deployment strategies from single-server to scalable cloud architectures."
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { CodeBlock } from 'fumadocs-ui/components/codeblock';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Mermaid } from '../../components/Mermaid';
+
+This guide covers various deployment strategies for Zero, from simple single-server deployments to scalable cloud architectures. Choose the approach that best fits your requirements and infrastructure.
+
+## Deployment Options
+
+<Cards>
+  <Card title="Cloudflare Workers" description="Global edge distribution (Recommended)" />
+  <Card title="Docker" description="Consistent containerized deployment" />
+  <Card title="Vercel" description="Serverless frontend deployment" />
+  <Card title="AWS" description="Scalable cloud architecture" />
+  <Card title="Google Cloud" description="Serverless container deployment" />
+</Cards>
+
+### 1. Cloudflare Workers (Recommended)
+
+<Callout type="info">
+Zero is optimized for deployment on Cloudflare Workers, providing global edge distribution and excellent performance.
+</Callout>
+
+#### Prerequisites
+
+<Callout type="info">
+Required for Cloudflare Workers deployment:
+</Callout>
+
+- Cloudflare account
+- Wrangler CLI installed
+- Domain configured in Cloudflare
+
+#### Setup Steps
+
+<Steps>
+  <Step>Install Wrangler CLI</Step>
+  <Step>Login to Cloudflare</Step>
+  <Step>Configure wrangler.jsonc</Step>
+  <Step>Set environment variables</Step>
+  <Step>Deploy</Step>
+</Steps>
+#### Install and Setup Wrangler
+```bash title="Terminal"
+# Install Wrangler CLI
+npm install -g wrangler
+
+# Login to Cloudflare
+wrangler login
+```
+#### Configure wrangler.jsonc
+
+Zero uses separate Cloudflare Workers for different services. The main configurations are:
+
+**Server Worker (apps/server/wrangler.jsonc)**
+```jsonc title="Server Configuration"
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zero-server",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/main.ts",
+  "env": {
+    "production": {
+      "ai": {
+        "binding": "AI"
+      },
+      "vectorize": [
+        {
+          "binding": "VECTORIZE",
+          "index_name": "threads-vector"
+        },
+        {
+          "binding": "VECTORIZE_MESSAGE", 
+          "index_name": "messages-vector"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "ZERO_AGENT",
+            "class_name": "ZeroAgent"
+          },
+          {
+            "name": "ZERO_MCP",
+            "class_name": "ZeroMCP"
+          },
+          {
+            "name": "ZERO_DB",
+            "class_name": "ZeroDB"
+          },
+          {
+            "class_name": "DurableMailbox",
+            "name": "DURABLE_MAILBOX"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+**Mail Worker (apps/mail/wrangler.jsonc)**
+```jsonc title="Mail Configuration"
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zero",
+  "compatibility_date": "2025-06-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./build/client/",
+    "not_found_handling": "single-page-application",
+    "html_handling": "force-trailing-slash"
+  },
+  "env": {
+    "local": {
+      "name": "zero-local",
+      "vars": {
+        "VITE_PUBLIC_BACKEND_URL": "http://localhost:8787",
+        "VITE_PUBLIC_APP_URL": "http://localhost:3000"
+      }
+    },
+    "staging": {
+      "name": "zero-staging", 
+      "vars": {
+        "VITE_PUBLIC_BACKEND_URL": "https://sapi.0.email",
+        "VITE_PUBLIC_APP_URL": "https://staging.0.email"
+      }
+    },
+    "production": {
+      "name": "zero-production",
+      "vars": {
+        "VITE_PUBLIC_BACKEND_URL": "https://api.0.email",
+        "VITE_PUBLIC_APP_URL": "https://0.email"
+      }
+    }
+  }
+}
+```
+
+<Callout type="warning">
+**Complex Configuration**: Zero uses advanced Cloudflare features including Durable Objects, Vectorize, AI, and Queues. Ensure your Cloudflare account has access to these features.
+</Callout>
+
+<Callout type="warning">
+**Additional Advanced Features**: The production configuration also includes:
+- **Workflows**: For complex business process automation
+- **Hyperdrive**: For database connection pooling and acceleration  
+- **KV Namespaces**: For distributed key-value storage
+- **Scheduled Events**: For background job processing
+</Callout>
+
+#### Required Cloudflare Services
+
+<Tabs items={['Vectorize', 'Durable Objects', 'AI', 'Queues']}>
+  <Tab value="Vectorize">
+    ```bash title="Create Vectorize Indexes"
+    # Create vector indexes for AI features
+    wrangler vectorize create threads-vector --dimensions=1536 --metric=cosine
+    wrangler vectorize create messages-vector --dimensions=1536 --metric=cosine
+    ```
+  </Tab>
+  <Tab value="Durable Objects">
+    ```bash title="Deploy Durable Objects"
+    # Durable Objects are deployed automatically with the worker
+    # Ensure these classes are available:
+    # - ZeroAgent
+    # - ZeroMCP  
+    # - ZeroDB
+    # - DurableMailbox
+    ```
+  </Tab>
+  <Tab value="AI">
+    ```bash title="AI Models"
+    # Zero uses Cloudflare AI models
+    # Available models:
+    # - @cf/meta/llama-3.1-70b-instruct
+    # - @cf/openai/whisper
+    # - Various embedding models
+    ```
+  </Tab>
+  <Tab value="Queues">
+    ```bash title="Create Queues"
+    wrangler queues create thread-queue
+    wrangler queues create subscribe-queue
+    wrangler queues create digest-queue
+    wrangler queues create ai-queue
+    ```
+  </Tab>
+</Tabs>
+
+#### Environment Variables
+
+```bash title="Production Environment Variables"
+# Core Configuration
+wrangler secret put DATABASE_URL
+wrangler secret put BETTER_AUTH_SECRET
+wrangler secret put COOKIE_DOMAIN
+
+# OAuth Configuration  
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+
+# AI Services
+wrangler secret put OPENAI_API_KEY
+wrangler secret put PERPLEXITY_API_KEY
+wrangler secret put GROQ_API_KEY
+wrangler secret put AI_SYSTEM_PROMPT
+
+# Email Services
+wrangler secret put RESEND_API_KEY
+
+# Cache/Storage
+wrangler secret put REDIS_URL
+wrangler secret put REDIS_TOKEN
+
+# Optional Services
+wrangler secret put TWILIO_ACCOUNT_SID
+wrangler secret put TWILIO_AUTH_TOKEN
+wrangler secret put TWILIO_PHONE_NUMBER
+wrangler secret put AUTUMN_SECRET_KEY
+```
+
+<Callout type="info">
+**Environment Variables**: These secrets are set per environment (staging/production) and are encrypted by Cloudflare.
+</Callout>
+
+#### Deploy
+
+```bash title="Deploy Commands"
+# Deploy server to Cloudflare Workers
+cd apps/server
+wrangler deploy
+
+# Deploy mail app to Cloudflare Workers  
+cd apps/mail
+wrangler deploy
+```
+
+#### Custom Domain
+
+```bash title="Custom Domain Setup"
+# Add custom route
+wrangler route add "mail.yourdomain.com/*" zero-email-client
+```
+
+### 2. Docker Deployment
+
+<Callout type="info">
+Deploy using Docker containers for consistent environments across different platforms and infrastructure providers.
+</Callout>
+
+#### Docker Configuration
+
+```dockerfile title="docker/app/Dockerfile"
+# Base Stage: Node.js with Alpine Linux  
+FROM node:22-alpine AS base
+
+# Dependencies Stage: Install Dependencies
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install package managers
+RUN npm install -g pnpm
+RUN pnpm install -g turbo
+
+# Copy dependency files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+RUN mkdir -p apps packages
+COPY apps/*/package.json ./apps/
+COPY packages/ ./packages/
+
+RUN pnpm install --prod --ignore-scripts
+
+# Builder Stage: Build the Application
+FROM base AS builder
+WORKDIR /app
+
+# Install global dependencies
+RUN npm install -g pnpm
+RUN pnpm install -g turbo
+
+# Copy source code and dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application
+RUN turbo build
+
+# Production Stage: Runtime Environment
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app/apps/mail/build ./apps/mail/build
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+
+USER nodejs
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+CMD ["node", "apps/mail/build/server/index.js"]
+```
+
+#### Docker Compose
+
+<Callout type="info">
+Use Docker Compose for easy multi-service deployment with database and cache services.
+</Callout>
+
+```yaml title="docker-compose.prod.yaml"
+services:
+  zero:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    environment:
+      VITE_PUBLIC_BACKEND_URL: ${VITE_PUBLIC_BACKEND_URL:-http://cf-worker.example}
+      VITE_PUBLIC_APP_URL: ${VITE_PUBLIC_APP_URL:-http://localhost:3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-zerodotemail}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_TOKEN: ${REDIS_TOKEN:-upstash-local-token}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      AI_SYSTEM_PROMPT: ${AI_SYSTEM_PROMPT}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+      upstash-proxy:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:3000']
+      interval: 90s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - 3000:3000
+
+  db:
+    container_name: zerodotemail-db
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zerodotemail
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    container_name: zerodotemail-redis
+    image: docker.io/bitnami/valkey:8.0
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - VALKEY_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - 6379:6379
+    volumes:
+      - valkey-data:/bitnami/valkey/data
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  upstash-proxy:
+    container_name: zerodotemail-upstash-proxy
+    image: hiett/serverless-redis-http:latest
+    environment:
+      REDIS_URL: redis://valkey:6379
+      TOKEN: upstash-local-token
+    ports:
+      - 8079:80
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '--quiet', 'http://127.0.0.1:80/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  valkey-data:
+```
+
+#### Deployment Commands
+
+```bash title="Docker Deployment Commands"
+# Build and start services
+docker-compose -f docker-compose.prod.yaml up -d
+
+# View logs
+docker-compose logs -f app
+
+# Scale the application
+docker-compose up -d --scale app=3
+```
+
+### 3. Local Development
+
+<Callout type="info">
+For local development and testing, Zero includes a comprehensive Docker Compose setup.
+</Callout>
+
+#### Local Development Setup
+
+```bash title="Local Development Commands"
+# Start local development environment
+docker-compose -f docker-compose.db.yaml up -d
+
+# Install dependencies
+pnpm install
+
+# Start development servers
+pnpm dev
+```
+
+#### Local Services
+
+The local development environment includes:
+
+- **PostgreSQL Database** - Primary data storage
+- **Valkey (Redis)** - Caching and session storage  
+- **Upstash Proxy** - Redis HTTP proxy for serverless compatibility
+
+```yaml title="docker-compose.db.yaml"
+services:
+  db:
+    container_name: zerodotemail-db
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zerodotemail
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  valkey:
+    container_name: zerodotemail-redis
+    image: docker.io/bitnami/valkey:8.0
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
+    volumes:
+      - valkey-data:/bitnami/valkey/data
+
+  upstash-proxy:
+    container_name: zerodotemail-upstash-proxy
+    image: hiett/serverless-redis-http:latest
+    environment:
+      REDIS_URL: redis://valkey:6379
+      TOKEN: upstash-local-token
+    ports:
+      - 8079:80
+
+volumes:
+  postgres-data:
+  valkey-data:
+```
+
+### 4. AWS Deployment
+
+<Callout type="info">
+Deploy on AWS using various services for a scalable, enterprise-grade architecture.
+</Callout>
+
+#### Architecture Overview
+
+<Mermaid chart={`graph TD
+    Internet[Internet] --> CloudFront[CloudFront CDN]
+    CloudFront --> ALB[Application Load Balancer]
+    ALB --> ECS[ECS/Fargate]
+    ECS --> RDS[(RDS Database)]
+    ECS --> Cache[ElastiCache]
+    
+    subgraph "AWS Infrastructure"
+        CloudFront
+        ALB
+        ECS
+        RDS
+        Cache
+    end`
+}/>
+
+#### ECS Task Definition
+
+```json title="ECS Task Definition"
+{
+  "family": "zero-email-client",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::account:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::account:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "zero-app",
+      "image": "your-account.dkr.ecr.region.amazonaws.com/zero-email-client:latest",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:ssm:region:account:parameter/zero/database-url"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/zero-email-client",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+```
+
+
+#### CDK Deployment Script
+
+```typescript title="infrastructure/cdk-stack.ts"
+import * as cdk from 'aws-cdk-lib'
+import * as ecs from 'aws-cdk-lib/aws-ecs'
+import * as ec2 from 'aws-cdk-lib/aws-ec2'
+import * as rds from 'aws-cdk-lib/aws-rds'
+import * as elasticache from 'aws-cdk-lib/aws-elasticache'
+
+export class ZeroEmailStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props)
+
+    // VPC
+    const vpc = new ec2.Vpc(this, 'ZeroVPC', {
+      maxAzs: 2,
+      natGateways: 1,
+    })
+
+    // RDS Database
+    const database = new rds.DatabaseInstance(this, 'ZeroDatabase', {
+      engine: rds.DatabaseInstanceEngine.postgres({
+        version: rds.PostgresEngineVersion.VER_15,
+      }),
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T3,
+        ec2.InstanceSize.MICRO
+      ),
+      vpc,
+      multiAz: true,
+      allocatedStorage: 20,
+      storageEncrypted: true,
+      deletionProtection: true,
+    })
+
+    // ElastiCache Redis
+    const redis = new elasticache.CacheCluster(this, 'ZeroRedis', {
+      engine: 'redis',
+      cacheNodeType: 'cache.t3.micro',
+      numCacheNodes: 1,
+      vpc,
+    })
+
+    // ECS Cluster
+    const cluster = new ecs.Cluster(this, 'ZeroCluster', {
+      vpc,
+    })
+
+    // ECS Service
+    const taskDefinition = new ecs.FargateTaskDefinition(this, 'ZeroTaskDef', {
+      memoryLimitMiB: 1024,
+      cpu: 512,
+    })
+
+    const container = taskDefinition.addContainer('zero-app', {
+      image: ecs.ContainerImage.fromRegistry('your-ecr-repo:latest'),
+      memoryLimitMiB: 1024,
+      environment: {
+        NODE_ENV: 'production',
+      },
+      secrets: {
+        DATABASE_URL: ecs.Secret.fromSecretsManager(databaseSecret),
+      },
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'zero-app',
+      }),
+    })
+
+    container.addPortMappings({
+      containerPort: 3000,
+      protocol: ecs.Protocol.TCP,
+    })
+
+    new ecs.FargateService(this, 'ZeroService', {
+      cluster,
+      taskDefinition,
+      desiredCount: 2,
+      assignPublicIp: false,
+    })
+  }
+}
+```
+
+## Production Environment Variables
+
+<Callout type="warning">
+Ensure all production environment variables are properly set before deployment. Missing variables will cause deployment failures.
+</Callout>
+
+```bash title="Required Environment Variables" 
+# Database
+DATABASE_URL=postgresql://user:password@prod-db:5432/zerodotemail
+
+# Authentication
+BETTER_AUTH_SECRET=your-super-long-production-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# AI Services  
+OPENAI_API_KEY=your-openai-api-key
+PERPLEXITY_API_KEY=your-perplexity-api-key
+GROQ_API_KEY=your-groq-api-key
+AI_SYSTEM_PROMPT=your-custom-system-prompt
+
+# Email Services
+RESEND_API_KEY=your-resend-api-key
+
+# Cache/Storage
+REDIS_URL=your-redis-connection-string
+REDIS_TOKEN=your-redis-token
+
+# Application URLs
+VITE_PUBLIC_BACKEND_URL=https://api.yourdomain.com
+VITE_PUBLIC_APP_URL=https://yourdomain.com
+
+# Optional Services
+TWILIO_ACCOUNT_SID=your-twilio-sid
+TWILIO_AUTH_TOKEN=your-twilio-token
+TWILIO_PHONE_NUMBER=your-twilio-phone
+```
+
+## Security Considerations
+
+<Callout type="warning">
+Security is critical for email applications. Ensure all security measures are implemented before production deployment.
+</Callout>
+
+### Essential Security Checklist
+
+- [ ] **HTTPS Only** - Force all connections to use HTTPS
+- [ ] **Secure Headers** - Implement HSTS, CSP, and security headers
+- [ ] **Authentication** - Secure OAuth configuration and session management
+- [ ] **Database Security** - Encrypted connections and proper access controls
+- [ ] **Environment Variables** - Secure secret management
+- [ ] **Regular Updates** - Keep dependencies and base images updated
+- [ ] **Access Controls** - Proper user permissions and rate limiting
+- [ ] **Monitoring** - Error tracking and security monitoring
+
+### Security Headers Configuration
+
+```typescript title="Security Headers Example"
+// For Cloudflare Workers - configured in wrangler.jsonc
+{
+  "headers": {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  }
+}
+```
+
+## Monitoring and Health Checks
+
+<Callout type="info">
+Proper monitoring ensures your Zero deployment stays healthy and performs optimally.
+</Callout>
+
+### Health Check Endpoints
+
+Zero includes built-in health check endpoints:
+
+- `/health` - Basic application health
+- `/health/db` - Database connectivity
+- `/health/redis` - Cache connectivity  
+- `/health/detailed` - Comprehensive system status
+
+### Monitoring Setup
+
+```bash title="Basic Monitoring Commands"
+# Check application status
+curl https://your-domain.com/health
+
+# Monitor Cloudflare Workers logs
+wrangler tail --env production
+
+# Check Docker container health
+docker ps --filter "name=zero"
+docker logs zero-app
+```
+
+## Troubleshooting
+
+### Common Deployment Issues
+
+**Database Connection Failures**
+```bash title="Database Troubleshooting"
+# Test database connectivity
+psql $DATABASE_URL -c "SELECT version();"
+
+# Check connection string format
+echo $DATABASE_URL
+```
+
+**Cloudflare Workers Issues**
+```bash title="Workers Troubleshooting"
+# Check worker status
+wrangler whoami
+wrangler deployments list
+
+# View real-time logs
+wrangler tail --env production
+```
+
+**Environment Variable Problems**
+```bash title="Environment Troubleshooting"
+# List all secrets (for Cloudflare Workers)
+wrangler secret list
+
+# Test specific environment variables
+wrangler secret put TEST_VAR --env production
+```
+
+**Build Failures**
+```bash title="Build Troubleshooting"
+# Clear build cache
+pnpm store prune
+rm -rf node_modules
+pnpm install
+
+# Rebuild packages
+pnpm build --force
+```
+
+### Getting Help
+
+If you encounter issues during deployment:
+
+1. Check the [GitHub Issues](https://github.com/zerodotmail/zero/issues) for similar problems
+2. Review the application logs for error messages
+3. Verify all environment variables are correctly set
+4. Ensure your deployment platform has the required permissions and resources
+5. Join the community Discord for deployment support
