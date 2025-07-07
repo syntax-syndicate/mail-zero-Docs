@@ -1,0 +1,828 @@
+---
+title: "Architecture Overview"
+description: "System design and technical architecture patterns for scalable email client development."
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Accordions, Accordion } from 'fumadocs-ui/components/accordion';
+import { CodeBlock } from 'fumadocs-ui/components/codeblock';
+import { Files, File, Folder } from 'fumadocs-ui/components/files';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Mermaid } from '../../components/Mermaid';
+
+<Callout type="info">
+Zero is built with a modern, scalable architecture that emphasizes performance, maintainability, and user experience. This document provides a comprehensive overview of the system design, technology choices, and architectural patterns.
+</Callout>
+
+## High-Level Architecture
+
+<Callout type="info">
+The architecture follows a microservices pattern with clear separation of concerns between frontend, backend, and external services.
+</Callout>
+
+<Mermaid chart={`graph TB
+    Client[Web Client] --> API[API Gateway]
+    API --> Auth[Authentication Service]
+    API --> Mail[Mail Service]
+    API --> AI[AI Service]
+    
+    Mail --> DB[(Database)]
+    Mail --> Queue[Message Queue]
+    Mail --> Storage[File Storage]
+    
+    Queue --> Worker[Background Workers]
+    Worker --> SMTP[SMTP Servers]
+    Worker --> IMAP[IMAP Servers]
+    
+    subgraph "Frontend"
+        Client --> React[React App]
+        React --> Router[React Router]
+        React --> State[Zustand State]
+        React --> UI[Tailwind CSS]
+    end
+    
+    subgraph "Backend"
+        API --> Server[Node.js Server]
+        Server --> ORM[Drizzle ORM]
+        ORM --> DB
+    end`}
+/>
+
+## Technology Stack
+
+<Tabs items={['Frontend', 'Backend', 'Infrastructure']}>
+  <Tab value="Frontend">
+    ### Frontend Technologies
+    
+    <Cards>
+      <Card title="React 19" description="UI library with latest features and concurrent rendering" />
+      <Card title="TypeScript" description="Type-safe JavaScript with enhanced developer experience" />
+      <Card title="React Router v7" description="Full-stack web framework with Vite integration for routing and SSR" />
+      <Card title="Tailwind CSS" description="Utility-first CSS framework for rapid styling" />
+      <Card title="Zustand" description="Lightweight state management without boilerplate" />
+      <Card title="Shadcn UI" description="Beautifully designed components built with Radix UI and Tailwind CSS" />
+      <Card title="Framer Motion" description="Production-ready motion library for React" />
+    </Cards>
+  </Tab>
+  <Tab value="Backend">
+    ### Backend Technologies
+    
+    <Cards>
+      <Card title="Node.js" description="JavaScript runtime for server-side applications" />
+      <Card title="TypeScript" description="Type-safe backend development" />
+      <Card title="Hono" description="Fast, lightweight web framework for Cloudflare Workers" />
+      <Card title="Drizzle ORM" description="Type-safe database toolkit with excellent TypeScript support" />
+      <Card title="Better Auth" description="Modern authentication and authorization library" />
+      <Card title="PostgreSQL" description="Primary database with Docker Compose setup for local development" />
+      <Card title="Cloudflare Workers" description="Edge computing platform for global distribution" />
+    </Cards>
+  </Tab>
+  <Tab value="Infrastructure">
+    ### Infrastructure Components
+    
+    <Cards>
+      <Card title="Docker" description="Containerization for consistent deployments" />
+      <Card title="Cloudflare" description="CDN, DNS, and edge services" />
+      <Card title="Cloudflare Workers" description="Serverless runtime for edge computing" />
+      <Card title="Cloudflare Durable Objects" description="Stateful serverless objects for real-time collaboration" />
+      <Card title="Cloudflare Vectorize" description="Vector database for AI-powered search and recommendations" />
+      <Card title="Cloudflare AI" description="AI inference at the edge for smart email features" />
+    </Cards>
+  </Tab>
+</Tabs>
+
+## System Components
+
+<Callout type="info">
+The system is organized into distinct components, each handling specific aspects of the email client functionality.
+</Callout>
+
+## Project Structure
+
+<Callout type="info">
+Zero follows a monorepo structure with clear separation between applications, packages, and configuration.
+</Callout>
+
+<Files>
+  <Folder name="Zero/" defaultOpen>
+    <Folder name="apps/">
+      <Folder name="docs/" />
+      <Folder name="mail/" />
+      <Folder name="server/" />
+    </Folder>
+    <Folder name="packages/">
+      <Folder name="cli/" />
+      <Folder name="eslint-config/" />
+      <Folder name="tailwind-config/" />
+      <Folder name="tsconfig/" />
+    </Folder>
+    <Folder name="docker/">
+      <Folder name="app/" />
+      <Folder name="db/" />
+    </Folder>
+    <Folder name="scripts/" />
+    <Folder name="public/" />
+    <File name="docker-compose.db.yaml" />
+    <File name="turbo.json" />
+    <File name="pnpm-workspace.yaml" />
+  </Folder>
+</Files>
+
+### 1. Frontend Architecture
+<Files>
+  <Folder name="apps/mail/" defaultOpen>
+    <Folder name="app/">
+      <Folder name="(auth)/" />
+      <Folder name="(full-width)/" />
+      <Folder name="(routes)/" />
+      <Folder name="home/" />
+      <Folder name="meta-files/" />
+      <File name="entry.client.tsx" />
+      <File name="entry.server.tsx" />
+      <File name="root.tsx" />
+      <File name="routes.ts" />
+      <File name="globals.css" />
+      <File name="mailto-handler.ts" />
+      <File name="page.tsx" />
+    </Folder>
+    <Folder name="components/">
+      <Folder name="ui/" />
+      <Folder name="mail/" />
+      <Folder name="icons/" />
+      <Folder name="providers/" />
+      <Folder name="settings/" />
+      <Folder name="home/" />
+      <Folder name="connection/" />
+      <Folder name="context/" />
+      <Folder name="cookies/" />
+      <Folder name="create/" />
+      <Folder name="labels/" />
+      <Folder name="magicui/" />
+      <Folder name="motion-primitives/" />
+      <Folder name="pricing/" />
+      <Folder name="theme/" />
+      <Folder name="user/" />
+      <File name="ai-toggle-button.tsx" />
+      <File name="navigation.tsx" />
+      <File name="onboarding.tsx" />
+      <File name="party.tsx" />
+      <File name="responsive-modal.tsx" />
+      <File name="setup-phone.tsx" />
+      <File name="voice-button.tsx" />
+    </Folder>
+    <Folder name="hooks/" />
+    <Folder name="lib/" />
+    <Folder name="store/" />
+    <Folder name="types/" />
+    <Folder name="providers/" />
+    <Folder name="config/" />
+  </Folder>
+</Files>
+
+#### State Management
+
+<Callout type="info">
+We use Zustand for lightweight, performant state management without the complexity of Redux.
+</Callout>
+
+```typescript title="store/mail-store.ts"
+import { create } from 'zustand'
+import { devtools, persist } from 'zustand/middleware'
+
+interface MailState {
+  emails: Email[]
+  selectedEmail: Email | null
+  filters: FilterState
+  // Actions
+  setEmails: (emails: Email[]) => void
+  selectEmail: (email: Email) => void
+  updateFilters: (filters: Partial<FilterState>) => void
+}
+
+export const useMailStore = create<MailState>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        emails: [],
+        selectedEmail: null,
+        filters: { unread: false, starred: false },
+        
+        setEmails: (emails) => set({ emails }),
+        selectEmail: (email) => set({ selectedEmail: email }),
+        updateFilters: (filters) => 
+          set({ filters: { ...get().filters, ...filters } }),
+      }),
+      { name: 'mail-store' }
+    )
+  )
+)
+```
+
+#### Component Architecture
+
+```typescript title="components/mail/email-list.tsx"
+import { memo } from 'react'
+import { useMailStore } from '@/store/mail-store'
+import { EmailListItem } from './email-list-item'
+import { VirtualizedList } from '@/components/ui/virtualized-list'
+
+export const EmailList = memo(() => {
+  const { emails, selectEmail } = useMailStore()
+  
+  return (
+    <VirtualizedList
+      items={emails}
+      renderItem={(email) => (
+        <EmailListItem
+          key={email.id}
+          email={email}
+          onSelect={() => selectEmail(email)}
+        />
+      )}
+      itemHeight={80}
+      className="flex-1"
+    />
+  )
+})
+```
+
+### 2. Backend Architecture
+
+<Callout type="info">
+The backend follows a service-oriented architecture with clear separation between routes, services, and data access layers.
+</Callout>
+
+#### Server Structure
+
+<Files>
+  <Folder name="apps/server/" defaultOpen>
+    <Folder name="src/">
+      <File name="main.ts" />
+      <File name="ctx.ts" />
+      <File name="pipelines.ts" />
+      <File name="types.ts" />
+      <File name="overrides.d.ts" />
+      <Folder name="routes/" >
+        <Folder name="agent/"  />
+        <File name="ai.ts"  />
+        <File name="auth.ts" />
+        <File name="autumn.ts" />
+        <File name="chat.ts" />
+      </Folder>
+      <Folder name="services/">
+        <Folder name="mcp-service/" />
+        <Folder name="call-service/" />
+        <File name="writing-style-service.ts" />
+      </Folder>
+      <Folder name="db/"/>
+      <Folder name="lib/" />
+      <Folder name="trpc/"  />
+    </Folder>
+    <File name="drizzle.config.ts" />
+    <File name="wrangler.jsonc" />
+  </Folder>
+</Files>
+
+#### Database Schema
+
+<Callout type="info">
+We use Drizzle ORM for type-safe database operations with excellent TypeScript integration.
+</Callout>
+
+```typescript title="src/db/schema.ts"
+import {
+  pgTableCreator,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  jsonb,
+  primaryKey,
+  unique,
+} from 'drizzle-orm/pg-core';
+import { defaultUserSettings } from '../lib/schemas';
+
+export const createTable = pgTableCreator((name) => `mail0_${name}`);
+
+export const user = createTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').notNull(),
+  image: text('image'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  defaultConnectionId: text('default_connection_id'),
+  customPrompt: text('custom_prompt'),
+  phoneNumber: text('phone_number').unique(),
+  phoneNumberVerified: boolean('phone_number_verified'),
+});
+
+export const session = createTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id),
+});
+
+export const account = createTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const userHotkeys = createTable('user_hotkeys', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id),
+  shortcuts: jsonb('shortcuts').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const verification = createTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at'),
+  updatedAt: timestamp('updated_at'),
+});
+
+export const earlyAccess = createTable('early_access', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  isEarlyAccess: boolean('is_early_access').notNull().default(false),
+  hasUsedTicket: text('has_used_ticket').default(''),
+});
+
+export const connection = createTable(
+  'connection',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id),
+    email: text('email').notNull(),
+    name: text('name'),
+    picture: text('picture'),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    scope: text('scope').notNull(),
+    providerId: text('provider_id').$type<'google' | 'microsoft'>().notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+    updatedAt: timestamp('updated_at').notNull(),
+  },
+  (t) => [unique().on(t.userId, t.email)],
+);
+
+export const summary = createTable('summary', {
+  messageId: text('message_id').primaryKey(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+  connectionId: text('connection_id').notNull(),
+  saved: boolean('saved').notNull().default(false),
+  tags: text('tags'),
+  suggestedReply: text('suggested_reply'),
+});
+
+export const note = createTable('note', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  threadId: text('thread_id').notNull(),
+  content: text('content').notNull(),
+  color: text('color').notNull().default('default'),
+  isPinned: boolean('is_pinned').default(false),
+  order: integer('order').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const userSettings = createTable('user_settings', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id)
+    .unique(),
+  settings: jsonb('settings').notNull().default(defaultUserSettings),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+});
+
+export const writingStyleMatrix = createTable(
+  'writing_style_matrix',
+  {
+    connectionId: text()
+      .notNull()
+      .references(() => connection.id, { onDelete: 'cascade' }),
+    numMessages: integer().notNull(),
+    style: jsonb().$type<unknown>().notNull(),
+    updatedAt: timestamp()
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => {
+    return [
+      primaryKey({
+        columns: [table.connectionId],
+      }),
+    ];
+  },
+);
+
+export const jwks = createTable('jwks', {
+  id: text('id').primaryKey(),
+  publicKey: text('public_key').notNull(),
+  privateKey: text('private_key').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+});
+```
+
+#### API Routes
+
+```typescript title="src/routes/ai.ts"
+import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
+import { requireAuth } from '../lib/auth'
+import { OpenAIService } from '../services/openai'
+
+const ai = new Hono()
+
+// Compose email with AI
+ai.post('/compose', 
+  requireAuth,
+  zValidator('json', z.object({
+    prompt: z.string(),
+    context: z.string().optional(),
+  })),
+  async (c) => {
+    const userId = c.get('user').id
+    const { prompt, context } = c.req.valid('json')
+    
+    const composition = await OpenAIService.composeEmail({
+      userId,
+      prompt,
+      context,
+    })
+    
+    return c.json({ composition })
+  }
+)
+
+// Summarize email
+ai.post('/summarize',
+  requireAuth,
+  zValidator('json', z.object({
+    content: z.string(),
+  })),
+  async (c) => {
+    const { content } = c.req.valid('json')
+    
+    const summary = await OpenAIService.summarizeEmail(content)
+    
+    return c.json({ summary })
+  }
+)
+
+export default ai
+```
+
+### 3. MCP Service Integration
+
+<Callout type="info">
+Zero uses the Model Context Protocol (MCP) for email operations, providing a standardized interface for AI agents to interact with email systems.
+</Callout>
+
+#### MCP Service Architecture
+
+```typescript title="src/services/mcp-service/index.ts"
+import { MCPServer } from '@modelcontextprotocol/sdk/server.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { ListResourcesRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+
+export class ZeroMCPService {
+  private server: MCPServer
+  
+  constructor() {
+    this.server = new MCPServer(
+      {
+        name: 'zero-mcp',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          resources: {},
+          tools: {},
+        },
+      }
+    )
+    
+    this.setupHandlers()
+  }
+  
+  private setupHandlers() {
+    // Email management tools
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      return {
+        resources: [
+          {
+            uri: 'zero://emails',
+            name: 'Email Management',
+            description: 'Access and manage emails',
+          },
+          {
+            uri: 'zero://labels',
+            name: 'Label Management', 
+            description: 'Manage email labels and organization',
+          },
+        ],
+      }
+    })
+  }
+  
+  async start() {
+    const transport = new StdioServerTransport()
+    await this.server.connect(transport)
+  }
+}
+```
+
+### 5. Authentication System
+
+<Callout type="info">
+We use Better Auth for modern, secure authentication with OAuth providers and session management.
+</Callout>
+
+#### Better Auth Integration
+
+```typescript title="src/lib/auth.ts"
+import { betterAuth } from "better-auth"
+import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { db } from "../db"
+import * as schema from "../db/schema"
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema,
+  }),
+  
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      scope: [
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.modify'
+      ]
+    }
+  },
+  
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+  },
+  
+  plugins: [],
+})
+
+export const { GET, POST } = auth.handler
+```
+
+### 4. AI Integration
+
+<Callout type="info">
+AI features are powered by multiple providers including OpenAI, Perplexity, and Cloudflare AI for enhanced email functionality.
+</Callout>
+
+#### AI Service Architecture
+
+```typescript title="src/services/ai-service.ts"
+import { generateText } from 'ai'
+import { openai } from '@ai-sdk/openai'
+import { perplexity } from '@ai-sdk/perplexity'
+
+export class AIService {
+  static async composeEmail(params: {
+    prompt: string
+    context?: string
+    style?: 'formal' | 'casual' | 'professional'
+  }) {
+    const { prompt, context, style = 'professional' } = params
+    
+    const systemPrompt = `You are an AI email assistant. Write a ${style} email based on the user's request.`
+    
+    const { text } = await generateText({
+      model: openai('gpt-4'),
+      system: systemPrompt,
+      prompt: context ? `Context: ${context}\n\nRequest: ${prompt}` : prompt,
+      maxTokens: 500,
+    })
+    
+    return text
+  }
+  
+  static async summarizeThread(emails: Array<{ subject: string; body: string }>) {
+    const emailContent = emails
+      .map(email => `Subject: ${email.subject}\nBody: ${email.body}`)
+      .join('\n\n---\n\n')
+    
+    const { text } = await generateText({
+      model: openai('gpt-4'),
+      system: 'Summarize this email thread concisely, highlighting key points and action items.',
+      prompt: emailContent,
+      maxTokens: 200,
+    })
+    
+    return text
+  }
+  
+  static async searchWeb(query: string) {
+    const { text } = await generateText({
+      model: perplexity('llama-3.1-sonar-small-128k-online'),
+      prompt: query,
+      maxTokens: 1000,
+    })
+    
+    return text
+  }
+}
+```
+
+## Data Flow
+
+<Callout type="info">
+Understanding the data flow helps in debugging and optimizing the system performance.
+</Callout>
+
+### 1. Email Access Flow
+
+<Callout type="info">
+This sequence diagram shows how emails are accessed through the MCP service from external providers.
+</Callout>
+
+<Mermaid chart={`sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant MCP
+    participant Gmail
+    participant Database
+    
+    User->>Frontend: Open Email Client
+    Frontend->>API: GET /api/emails
+    API->>MCP: Request emails via MCP
+    MCP->>Gmail: OAuth API call
+    Gmail-->>MCP: Return email data
+    MCP->>Database: Cache emails
+    MCP-->>API: Return emails
+    API-->>Frontend: Send emails
+    Frontend->>Frontend: Update UI`}
+/>
+
+### 2. Email Composition Flow
+
+<Mermaid chart={`sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant MCP
+    participant AI
+    participant Gmail
+    
+    User->>Frontend: Compose email
+    Frontend->>API: POST /api/emails/compose
+    API->>AI: Generate/enhance content
+    AI-->>API: Return enhanced content
+    API->>MCP: Send email via MCP
+    MCP->>Gmail: OAuth API call
+    Gmail-->>MCP: Confirm sent
+    MCP-->>API: Return success
+    API-->>Frontend: Update UI status`}
+/>
+
+## Performance Optimizations
+
+<Callout type="info">
+Performance optimizations are applied at every layer to ensure a responsive user experience.
+</Callout>
+
+<Tabs items={['Frontend', 'Backend', 'Email Processing']}>
+  <Tab value="Frontend">
+    ### Frontend Optimizations
+    
+    <Cards>
+      <Card title="Code Splitting" description="Route-based code splitting with React.lazy()" />
+      <Card title="Virtual Scrolling" description="Efficient rendering of large email lists" />
+      <Card title="Memoization" description="React.memo and useMemo for expensive computations" />
+      <Card title="Image Optimization" description="Lazy loading and responsive images" />
+      <Card title="Bundle Optimization" description="Tree shaking and chunk optimization" />
+    </Cards>
+  </Tab>
+  <Tab value="Backend">
+    ### Backend Optimizations
+    
+    <Cards>
+      <Card title="Database Indexing" description="Optimized queries with proper indexes" />
+      <Card title="Connection Pooling" description="Efficient database connection management" />
+      <Card title="Caching" description="Redis caching for frequently accessed data" />
+      <Card title="Background Jobs" description="Asynchronous processing for heavy operations" />
+      <Card title="CDN" description="Static asset delivery via Cloudflare" />
+    </Cards>
+  </Tab>
+  <Tab value="Email Processing">
+    ### Email Processing Optimizations
+    
+    <Cards>
+      <Card title="MCP Protocol Efficiency" description="Optimized MCP calls for minimal latency" />
+      <Card title="OAuth Token Management" description="Efficient token refresh and caching" />
+      <Card title="Batch Operations" description="Process multiple emails in single API calls" />
+      <Card title="Smart Caching" description="Cache frequently accessed emails and metadata" />
+    </Cards>
+  </Tab>
+</Tabs>
+
+## Security Architecture
+
+<Callout type="warning">
+Security is paramount in email client architecture. Multiple layers of protection ensure data safety.
+</Callout>
+
+<Accordions type="single" collapsible>
+  <Accordion value="auth-security" title="Authentication Security">
+    - **Better Auth** - Modern authentication with secure session management
+    - **OAuth 2.0** - Secure third-party authentication flows with Gmail
+    - **JWT Tokens** - Stateless authentication with proper expiration
+    - **CSRF Protection** - Cross-site request forgery prevention
+    - **Rate Limiting** - API endpoint protection against abuse
+  </Accordion>
+  <Accordion value="data-security" title="Data Security">
+    - **Database Encryption** - Sensitive data protection at rest
+    - **TLS/SSL** - Encrypted data transmission with latest protocols
+    - **Input Validation** - Comprehensive input sanitization via Zod schemas
+    - **SQL Injection Prevention** - Parameterized queries with Drizzle ORM
+    - **Environment Variables** - Secure configuration management
+  </Accordion>
+  <Accordion value="email-security" title="Email Security">
+    - **OAuth Scopes** - Minimal required permissions for Gmail access
+    - **Token Refresh** - Automatic token renewal and secure storage
+    - **MCP Protocol** - Secure communication with email services
+    - **Content Security Policy** - XSS protection and content filtering
+  </Accordion>
+</Accordions>
+
+## Scalability Considerations
+
+<Callout type="info">
+The architecture is designed to scale from single-user installations to enterprise deployments.
+</Callout>
+
+### Horizontal Scaling Strategy
+
+<Cards>
+  <Card title="Stateless Design" description="Servers can be scaled horizontally without session dependencies" />
+  <Card title="Load Balancing" description="Distribute traffic across multiple instances" />
+  <Card title="Database Scaling" description="Read replicas and sharding strategies" />
+  <Card title="Microservices" description="Service-oriented architecture for independent scaling" />
+</Cards>
+
+### Caching Strategy
+
+<Steps>
+  <Step>**Multi-level Caching** - Browser, Cloudflare CDN, and application caching</Step>
+  <Step>**OAuth Token Caching** - Secure token storage and refresh management</Step>
+  <Step>**Email Metadata Caching** - Cache frequently accessed email headers and labels</Step>
+  <Step>**Static Asset Caching** - Long-term caching for static resources via Cloudflare</Step>
+</Steps>
+
